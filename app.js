@@ -1060,7 +1060,8 @@
     }
     const csv = toCsv(state.logs);
     const endpoint = formsubmitEndpoint();
-    const subject = `${submitCfg.studyName || "Judgment pilot"} · ${state.participantId}`;
+    const stamp = new Date().toISOString().replace("T", " ").slice(0, 19);
+    const subject = `${submitCfg.studyName || "Judgment pilot"} · ${state.participantId} · ${stamp}`;
     try {
       const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(endpoint)}`, {
         method: "POST",
@@ -1070,6 +1071,11 @@
         },
         body: JSON.stringify({
           _subject: subject,
+          _template: "table",
+          _captcha: "false",
+          // Unique fields help FormSubmit not treat retests as identical spam
+          sent_at: stamp,
+          page_url: String(location.href || ""),
           participant_id: state.participantId,
           block_order: state.blockOrder.join(">"),
           n_trials: state.logs.length,
@@ -1082,7 +1088,20 @@
           csv: csv
         })
       });
-      if (!res.ok) throw new Error("HTTP " + res.status);
+      // FormSubmit often returns HTTP 200 even on failure; check JSON success string.
+      let data = null;
+      try {
+        data = await res.json();
+      } catch (_) {
+        data = null;
+      }
+      const okFlag = data && String(data.success) === "true";
+      if (!res.ok || !okFlag) {
+        const detail =
+          (data && (data.message || data.error)) ||
+          (!res.ok ? "HTTP " + res.status : "FormSubmit did not confirm delivery");
+        throw new Error(detail);
+      }
       state.submitStatus = {
         ok: true,
         message: "Responses were sent to the researcher. You can still download a backup CSV."
@@ -1091,9 +1110,9 @@
       state.submitStatus = {
         ok: false,
         message:
-          "Auto-send failed (often blocked on file:// or before FormSubmit activation). Please download the CSV. (" +
+          "Auto-send failed. Please download the CSV and keep it as backup. (" +
           (err && err.message ? err.message : "error") +
-          ")"
+          ") Tip: check spam, and if you moved host (e.g. Netlify → GitHub) activate FormSubmit again."
       };
     }
   }
