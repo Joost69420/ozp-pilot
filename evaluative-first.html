@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pilot study · Evaluative first</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar topbar-progress-only">
+        <div class="progress-wrap">
+          <div class="progress-label" id="progressLabel">Not started</div>
+          <div class="progress-track">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+        </div>
+      </header>
+
+      <main id="app" class="card" aria-live="polite"></main>
+    </div>
+
+    <script>
+      window.STUDY_CONFIG = { firstCondition: "evaluative" };
+    </script>
+    <script src="submit-config.js"></script>
+    <script src="cases.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

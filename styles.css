@@ -1,0 +1,759 @@
+/* Pilot experiment UI: plain survey / research form look */
+
+/* Design tokens shared across components */
+:root {
+  --ink: #222;
+  --ink-muted: #555;
+  --paper: #f0f0f0;
+  --paper-card: #fff;
+  --line: #ccc;
+  --accent: #005ebb; /* primary actions */
+  --accent-deep: #004a94;
+  --accent-soft: #e8f1fb;
+  --warn: #8a2f0f;
+  --warn-soft: #f8e8e2;
+  --phase: #005ebb; /* Phase badges / AI callout */
+  --phase-soft: #e8f1fb;
+  --shadow: none;
+  --radius: 4px;
+  --font: Arial, Helvetica, sans-serif;
+}
+
+/* ---- Base reset / page background ---------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: var(--font);
+  color: var(--ink);
+  background: var(--paper);
+}
+
+body {
+  line-height: 1.45;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+/* ---- Layout shell: centered column + top brand/progress ------------------ */
+.app-shell {
+  width: min(920px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 1.5rem 0 3rem;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.topbar-progress-only {
+  justify-content: flex-end;
+}
+
+/* Welcome / consent / practice: readable line length (~80 characters) */
+.prose-narrow {
+  max-width: 80ch;
+}
+
+.prose-narrow p {
+  max-width: 80ch;
+}
+
+.prose-narrow textarea {
+  width: 100%;
+  max-width: 80ch;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font: inherit;
+  resize: vertical;
+}
+
+/* Short patient context (under image): age/sex/localization from HAM10000-style metadata; note is synthetic */
+.vignette-box {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.65rem 0.75rem;
+  background: #fafafa;
+  margin-top: 0.15rem;
+}
+
+.vignette-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+  margin-bottom: 0.35rem;
+}
+
+.brand {
+  font-family: var(--font);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.brand span {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--ink-muted);
+}
+
+.progress-wrap {
+  min-width: 180px;
+  text-align: right;
+}
+
+.progress-label {
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  margin-bottom: 0.35rem;
+}
+
+.progress-track {
+  height: 8px;
+  background: #ddd;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+
+/* ---- Main content card (#app) -------------------------------------------- */
+.card {
+  background: var(--paper-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.25rem 1.25rem 1.4rem;
+}
+
+.card h1,
+.card h2 {
+  font-family: var(--font);
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+}
+
+.card h1 {
+  font-size: 1.7rem;
+}
+
+.card h2 {
+  font-size: 1.25rem;
+}
+
+.card p {
+  margin: 0 0 0.85rem;
+  color: var(--ink);
+}
+
+.muted {
+  color: var(--ink-muted);
+}
+
+/* ---- Trial badges (Phase / trial number / condition) --------------------- */
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.55rem;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.badge-phase {
+  background: var(--phase-soft);
+  color: var(--phase);
+  border-color: #c5d5ea;
+}
+
+.badge-condition {
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  border-color: #b7d8cc;
+}
+
+.badge-trial {
+  background: #f0ebe3;
+  color: var(--ink-muted);
+  border-color: var(--line);
+}
+
+.stack {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.field label {
+  display: block;
+  font-size: 0.86rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
+.field input[type="text"],
+.field select {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+/* ---- Feedback radio lists (vertical bullets) ----------------------------- */
+.radio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+}
+
+.radio-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.35rem 0.15rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.radio-item input[type="radio"] {
+  appearance: auto;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0.15rem 0 0;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.radio-item span {
+  flex: 1;
+}
+
+/* ---- Diagnosis choices + confidence scale -------------------------------- */
+.choice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.choice {
+  appearance: none;
+  border: 1.5px solid var(--line);
+  background: #fff;
+  border-radius: 4px;
+  padding: 0.9rem 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+
+.choice:hover {
+  border-color: #999;
+}
+
+.choice.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.choice strong {
+  display: block;
+  font-size: 0.95rem;
+  margin-bottom: 0.15rem;
+}
+
+.choice span {
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+}
+
+.confidence {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.35rem;
+}
+
+.confidence button {
+  border: 1.5px solid var(--line);
+  background: #fff;
+  border-radius: 4px;
+  padding: 0.55rem 0;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.confidence button.selected {
+  background: var(--phase);
+  border-color: var(--phase);
+  color: #fff;
+}
+
+.confidence-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  margin-top: 0.25rem;
+}
+
+/* ---- Primary / secondary action buttons (slightly square corners) -------- */
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.1rem;
+}
+
+.btn {
+  border: none;
+  border-radius: 4px;
+  padding: 0.7rem 1.15rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.15s, background 0.15s;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-primary:not(:disabled):hover {
+  background: var(--accent-deep);
+}
+
+.btn-secondary {
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+
+.btn:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+/* ---- Trial layout: image column + controls column ------------------------ */
+.media-panel {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 760px) {
+  .media-panel,
+  .choice-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Image + Original/Grad-CAM swap (recommendatory Phase 2) */
+.media-image-col {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.image-swap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+
+.swap-btn {
+  border: 1.5px solid var(--line);
+  background: #fff;
+  border-radius: 4px;
+  padding: 0.55rem 0.65rem;
+  font-weight: 600;
+  font-size: 0.86rem;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.swap-btn:hover {
+  border-color: #999;
+}
+
+.swap-btn.selected {
+  border-color: var(--phase);
+  background: var(--phase-soft);
+  color: var(--phase);
+}
+
+.image-swap-hint {
+  margin: 0;
+  font-size: 0.78rem;
+}
+
+.image-frame {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #333;
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+}
+
+.image-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.image-fallback {
+  color: #d7dde6;
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.9rem;
+}
+
+.image-fallback strong {
+  display: block;
+  font-size: 1.1rem;
+  margin-bottom: 0.35rem;
+  color: #fff;
+}
+
+/* CSS Grad-CAM fallback when case-0N-cam.png is missing */
+.cam-overlay {
+  position: absolute;
+  inset: 12% 18% 28% 22%;
+  border-radius: 40% 55% 45% 50%;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.55;
+}
+
+.cam-overlay.correct {
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.75), transparent 70%);
+}
+
+.cam-overlay.incorrect {
+  background: radial-gradient(circle at 80% 20%, rgba(239, 68, 68, 0.8), transparent 55%);
+  inset: 4% 4% 55% 50%;
+}
+
+.panel-box {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.85rem;
+  background: #fff;
+}
+
+.panel-box h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+/* AI prediction strip + mandatory explanation unfold gate */
+.ai-callout {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.75rem 0.85rem;
+  border-radius: var(--radius);
+  background: var(--phase-soft);
+  border: 1px solid #b8cce4;
+  margin-bottom: 0.75rem;
+}
+
+.ai-callout .label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--phase);
+  font-weight: 700;
+}
+
+.ai-callout .value {
+  font-family: var(--font);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.explain-gate {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.85rem;
+  background: #fafafa;
+}
+
+.explain-gate.locked .explain-body {
+  display: none;
+}
+
+.explain-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.8rem 0.95rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.explain-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.explain-toggle .chevron {
+  transition: transform 0.2s;
+}
+
+.explain-gate.open .explain-toggle .chevron {
+  transform: rotate(180deg);
+}
+
+.explain-body {
+  margin-top: 0.85rem;
+  display: none;
+}
+
+.explain-gate.open .explain-body {
+  display: block;
+}
+
+/* Phase-1 participant ABCD self-rating */
+.abcd-self {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.abcd-pick {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.55rem 0.65rem;
+  background: #fff;
+}
+
+.abcd-pick-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  font-size: 0.86rem;
+  margin-bottom: 0.4rem;
+}
+
+.abcd-pick-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+}
+
+.abcd-opt {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 0.45rem 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--ink);
+  text-align: center;
+}
+
+.abcd-opt:hover {
+  border-color: #999;
+}
+
+.abcd-opt.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* Evaluative advice columns + ABCD Q&A / optional details */
+.abcd-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+@media (max-width: 600px) {
+  .abcd-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.abcd-col {
+  border-radius: var(--radius);
+  padding: 0.7rem 0.75rem;
+  border: 1px solid var(--line);
+}
+
+.abcd-col.support {
+  background: var(--accent-soft);
+  border-color: #b7d8cc;
+}
+
+.abcd-col.against {
+  background: var(--warn-soft);
+  border-color: #f0c2b0;
+}
+
+.abcd-col h4 {
+  margin: 0 0 0.45rem;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.abcd-col ul {
+  margin: 0;
+  padding-left: 1.05rem;
+  font-size: 0.86rem;
+}
+
+.lean-note {
+  margin-top: 0.65rem;
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+}
+
+.abcd-qa-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.abcd-qa {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.55rem 0.7rem;
+  background: #fafafa;
+}
+
+.abcd-q {
+  font-weight: 600;
+  font-size: 0.88rem;
+  margin-bottom: 0.2rem;
+}
+
+.abcd-a {
+  font-size: 0.84rem;
+  color: var(--ink-muted);
+}
+
+.abcd-letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  margin-right: 0.35rem;
+  border-radius: 4px;
+  background: var(--phase-soft);
+  color: var(--phase);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.abcd-optional {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.55rem 0.7rem;
+  background: #fafafa;
+}
+
+.abcd-optional summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--ink);
+  list-style: none;
+}
+
+.abcd-optional summary::-webkit-details-marker {
+  display: none;
+}
+
+.abcd-optional summary::before {
+  content: "▸ ";
+  color: var(--ink-muted);
+}
+
+.abcd-optional[open] summary::before {
+  content: "▾ ";
+}
+
+.abcd-optional .abcd-qa-list {
+  margin-top: 0.65rem;
+}
+
+.notice {
+  padding: 0.75rem 0.85rem;
+  border-radius: var(--radius);
+  background: #fff8e8;
+  border: 1px solid #e0d0a8;
+  font-size: 0.88rem;
+}
+
+.list-check {
+  margin: 0.5rem 0 1rem;
+  padding-left: 1.15rem;
+}
+
+.list-check li {
+  margin-bottom: 0.35rem;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.footer-note {
+  margin-top: 1rem;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  text-align: center;
+}
