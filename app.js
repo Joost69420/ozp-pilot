@@ -1033,9 +1033,14 @@
     URL.revokeObjectURL(a.href);
   }
 
+  function web3formsKey() {
+    return String(submitCfg.web3formsAccessKey || "").trim();
+  }
+
   /**
-   * True when submit-config.js has a FormSubmit id (random string).
-   * Falls back to legacy formsubmitEmail if still present.
+   * FormSubmit id (random string) or legacy email.
+   * Prefer Web3Forms when configured — FormSubmit is flaky without Referer
+   * and often silent after the first activation.
    */
   function formsubmitEndpoint() {
     const id = String(submitCfg.formsubmitId || "").trim();
@@ -1046,73 +1051,97 @@
   }
 
   function canAutoSubmit() {
-    return !!formsubmitEndpoint();
+    return !!(web3formsKey() || formsubmitEndpoint());
   }
 
-  /** Optional FormSubmit POST; sets state.submitStatus for the done screen. */
+  function feedbackPayload(stamp, csv) {
+    return {
+      participant_id: state.participantId,
+      block_order: state.blockOrder.join(">"),
+      n_trials: state.logs.length,
+      sent_at: stamp,
+      page_url: String(location.href || ""),
+      feedback_clarity: state.feedback.clarity || "",
+      feedback_length: state.feedback.length || "",
+      feedback_confusing: state.feedback.confusing || "",
+      feedback_missing: state.feedback.missing || "",
+      feedback_other: state.feedback.other || "",
+      message: "Pilot CSV + feedback below. Copy the csv field into a .csv file if needed.",
+      csv: csv
+    };
+  }
+
+  /** Preferred: Web3Forms (stable). Fallback: FormSubmit. */
   async function autoSubmitCsv() {
     if (!canAutoSubmit()) {
       state.submitStatus = {
         ok: false,
-        message: "Auto-send is off (no formsubmitId in submit-config.js). Use Download CSV."
+        message: "Auto-send is off. Use Download CSV and email the file to the researcher."
       };
       return;
     }
     const csv = toCsv(state.logs);
-    const endpoint = formsubmitEndpoint();
     const stamp = new Date().toISOString().replace("T", " ").slice(0, 19);
     const subject = `${submitCfg.studyName || "Judgment pilot"} · ${state.participantId} · ${stamp}`;
+    const fields = feedbackPayload(stamp, csv);
+
     try {
-      const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(endpoint)}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json"
-        },
-        body: JSON.stringify({
-          _subject: subject,
-          _template: "table",
-          _captcha: "false",
-          // Unique fields help FormSubmit not treat retests as identical spam
-          sent_at: stamp,
-          page_url: String(location.href || ""),
-          participant_id: state.participantId,
-          block_order: state.blockOrder.join(">"),
-          n_trials: state.logs.length,
-          feedback_clarity: state.feedback.clarity || "",
-          feedback_length: state.feedback.length || "",
-          feedback_confusing: state.feedback.confusing || "",
-          feedback_missing: state.feedback.missing || "",
-          feedback_other: state.feedback.other || "",
-          message: "Pilot CSV + feedback below. Copy the csv field into a .csv file if needed.",
-          csv: csv
-        })
-      });
-      // FormSubmit often returns HTTP 200 even on failure; check JSON success string.
-      let data = null;
-      try {
-        data = await res.json();
-      } catch (_) {
-        data = null;
-      }
-      const okFlag = data && String(data.success) === "true";
-      if (!res.ok || !okFlag) {
-        const detail =
-          (data && (data.message || data.error)) ||
-          (!res.ok ? "HTTP " + res.status : "FormSubmit did not confirm delivery");
-        throw new Error(detail);
+      if (web3formsKey()) {
+        const res = await fetch("https://api.web3forms.com/submit", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json"
+          },
+          body: JSON.stringify({
+            access_key: web3formsKey(),
+            subject: subject,
+            from_name: "OZP pilot",
+            botcheck: "",
+            ...fields
+          })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+          throw new Error((data && data.message) || "HTTP " + res.status);
+        }
+      } else {
+        const endpoint = formsubmitEndpoint();
+        const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(endpoint)}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json"
+          },
+          // Referrer must come from the real GitHub Pages URL (not file://)
+          referrerPolicy: "origin-when-cross-origin",
+          body: JSON.stringify({
+            _subject: subject,
+            _template: "table",
+            _captcha: "false",
+            ...fields
+          })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || String(data.success) !== "true") {
+          throw new Error(
+            (data && (data.message || data.error)) ||
+              (!res.ok ? "HTTP " + res.status : "FormSubmit did not confirm delivery")
+          );
+        }
       }
       state.submitStatus = {
         ok: true,
-        message: "Responses were sent to the researcher. You can still download a backup CSV."
+        message:
+          "Responses were sent to the researcher. Please also download the CSV as a backup."
       };
     } catch (err) {
       state.submitStatus = {
         ok: false,
         message:
-          "Auto-send failed. Please download the CSV and keep it as backup. (" +
+          "Auto-send failed — download the CSV and send it to the researcher. (" +
           (err && err.message ? err.message : "error") +
-          ") Tip: check spam, and if you moved host (e.g. Netlify → GitHub) activate FormSubmit again."
+          ")"
       };
     }
   }

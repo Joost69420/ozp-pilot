@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Test auto-send</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <main class="card prose-narrow">
+        <h1>Test auto-send</h1>
+        <p>
+          Korte ping naar je mail zonder de hele pilot te doorlopen. Open deze pagina
+          via je <strong>GitHub Pages-link</strong> (niet als lokaal bestand).
+        </p>
+        <p class="muted" id="cfgInfo">Laden…</p>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btnPing">Stuur testmail</button>
+        </div>
+        <div class="notice" id="result" style="margin-top: 1rem">Nog niet verzonden.</div>
+      </main>
+    </div>
+    <script src="submit-config.js"></script>
+    <script>
+      const cfg = window.SUBMIT_CONFIG || {};
+      const key = String(cfg.web3formsAccessKey || "").trim();
+      const fs = String(cfg.formsubmitId || cfg.formsubmitEmail || "").trim();
+      const info = document.getElementById("cfgInfo");
+      const result = document.getElementById("result");
+
+      if (key) {
+        info.textContent = "Provider: Web3Forms (access key gezet).";
+      } else if (fs) {
+        info.textContent =
+          "Provider: FormSubmit (fallback). Zet liever een Web3Forms-key in submit-config.js.";
+      } else {
+        info.textContent = "Geen provider geconfigureerd in submit-config.js.";
+      }
+
+      document.getElementById("btnPing").onclick = async () => {
+        result.textContent = "Bezig…";
+        const stamp = new Date().toISOString();
+        try {
+          if (key) {
+            const res = await fetch("https://api.web3forms.com/submit", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Accept: "application/json" },
+              body: JSON.stringify({
+                access_key: key,
+                subject: "OZP pilot · test ping · " + stamp,
+                from_name: "OZP pilot test",
+                message: "Dit is een test vanaf " + location.href,
+                sent_at: stamp,
+                page_url: location.href
+              })
+            });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.message || "fail");
+            result.textContent = "OK — check inbox/spam. Web3Forms zegt success.";
+          } else if (fs) {
+            const res = await fetch("https://formsubmit.co/ajax/" + encodeURIComponent(fs), {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Accept: "application/json" },
+              referrerPolicy: "origin-when-cross-origin",
+              body: JSON.stringify({
+                _subject: "OZP pilot · test ping · " + stamp,
+                _captcha: "false",
+                message: "Dit is een test vanaf " + location.href,
+                sent_at: stamp,
+                page_url: location.href
+              })
+            });
+            const data = await res.json();
+            if (String(data.success) !== "true") throw new Error(data.message || "fail");
+            result.textContent = "OK volgens FormSubmit — check inbox/spam.";
+          } else {
+            throw new Error("Geen key/id in submit-config.js");
+          }
+        } catch (err) {
+          result.textContent = "Mislukt: " + (err && err.message ? err.message : err);
+        }
+      };
+    </script>
+  </body>
+</html>
